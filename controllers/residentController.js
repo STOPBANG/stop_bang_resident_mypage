@@ -1,6 +1,6 @@
+const {httpRequest} = require("../utils/httpRequest.js");
 const residentModel = require("../models/residentModel.js");
 const tags = require("../public/assets/tag.js");
-const jwt = require("jsonwebtoken");
 
 module.exports = {
   myReview: (req, res) => {
@@ -51,47 +51,100 @@ module.exports = {
     });
   },
   settings: (req, res) => {
-    residentModel.getResidentById(req.headers.auth, (result, err) => {
-      if (result === null) {
-        console.log("error occured: ", err);
-      } else {
-        res.json(
-          {
-            resident: result[0][0],
-            path: "settings",
-          }
-        );
+    /* msa */
+    const postOptions = {
+      host: 'stop_bang_auth_DB',
+      port: process.env.PORT,
+      path: `/db/resident/findById`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+
+    const requestBody = {
+      username: req.headers.auth
+    };
+    httpRequest(postOptions, requestBody)
+      .then(result => {
+        if (result === null) {
+          console.log("error occured: ", err);
+        } else {
+          return res.json({
+            resident: result.body[0],
+            path: "settings"
+          });
+        }
+      });
   },
   updateSettings: (req, res) => {
-    const body = req.body;
-    if (body.birth === "") body.birth = null;
-    residentModel.updateResident(req.headers.auth, body, (result, err) => {
-      if (result === null) {
-        console.log("error occured: ", err);
-      } else {
-        res.redirect("/resident/settings");
+    /* msa */
+    const postOptions = {
+      host: 'stop_bang_auth_DB',
+      port: process.env.PORT,
+      path: `/db/resident/update`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+
+    const requestBody = req.body;
+    if (!requestBody.birth) requestBody.birth = null;
+    httpRequest(postOptions, requestBody)
+      .then(result => {
+        if (result === null) {
+          console.log("error occured: ", err);
+        } else {
+          return res.status(302).redirect("/resident/settings");
+        }
+      });
   },
   updatePassword: (req, res) => {
-    residentModel.updateResidentPassword(req.headers.auth, req.body, (result, err) => {
-      if (result === null) {
-        if (err === "pwerror") {
-          res.render('notFound.ejs', {message: "입력한 비밀번호가 잘못되었습니다."});
-        }
-      } else {
-        res.redirect("/resident/settings");
+    /* msa */
+    const postOptions = {
+      host: 'stop_bang_auth_DB',
+      port: process.env.PORT,
+      path: `/db/resident/updatepw`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+
+    const requestBody = req.body;
+    requestBody.username = req.headers.auth;
+    httpRequest(postOptions, requestBody)
+      .then(result => {
+        if (result === null) {
+          if (err === "pwerror") {
+            res.json({ message: "입력한 비밀번호가 잘못되었습니다." });
+          }
+        } else {
+          res.redirect("/resident/settings");
+        }
+      });
   },
   deleteAccount: async (req, res) => {
     try {
-      await residentModel.deleteAccountProcess(req.headers.auth);
-      res.clearCookie("userType");
-      res.clearCookie("authToken");
-      res.status(302).redirect("/");
+      /* msa */
+      const postOptions = {
+        host: 'stop_bang_auth_DB',
+        port: process.env.PORT,
+        path: `/db/resident/delete`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      };
+      const requestBody = req.body;
+
+      httpRequest(postOptions, requestBody)
+        .then(() => {
+          res.clearCookie("userType");
+          res.clearCookie("authToken");
+          return res.status(302).redirect("/");
+        });
     } catch (error) {
       console.log(error);
       res.status(500).json({ message: error });

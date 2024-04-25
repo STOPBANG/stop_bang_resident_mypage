@@ -4,17 +4,43 @@ const tags = require("../public/assets/tag.js");
 
 module.exports = {
   myReview: (req, res) => {
-    residentModel.getReviewById(req.headers.auth, (result, err) => {
-      if (result === null) {
-        console.log("error occured: ", err);
-      } else {
-        res.json({
-          reviews: result[0],
-          tagsData: tags,
-          path: 'myreview'
-        });
+    /* msa */
+    const postOptionsResident = {
+      host: 'stop_bang_auth_DB',
+      port: process.env.PORT,
+      path: `/db/resident/findById`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+    const requestBody = {username: req.headers.auth};
+    httpRequest(postOptionsResident, requestBody)
+      .then((res) => {
+        const user_id = res.body[0].id;
+        const getOptions = {
+          host: 'stop_bang_review_DB',
+          port: process.env.PORT,
+          path: `/db/review/findAllByUserId/${user_id}`,
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        };
+    
+        return httpRequest(getOptions);
+      })
+      .then(result => {
+        if (result === null) {
+          console.log("error occured: ", err);
+        } else {
+          res.json({
+            reviews: result.body,
+            tagsData: tags,
+            path: 'myreview'
+          });
+        }
+      });
   },
   openReview: (req, res) => {
     residentModel.getOpenedReviewById(req.headers.auth, (result, err) => {

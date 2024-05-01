@@ -5,31 +5,18 @@ const tags = require("../public/assets/tag.js");
 module.exports = {
   myReview: (req, res) => {
     /* msa */
-    const postOptionsResident = {
-      host: 'stop_bang_auth_DB',
+    const user_id = req.headers.id;
+    const getOptions = {
+      host: 'stop_bang_review_DB',
       port: process.env.PORT,
-      path: `/db/resident/findById`,
-      method: 'POST',
+      path: `/db/review/findAllByUserId/${user_id}`,
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       }
     };
-    const requestBody = {username: req.headers.auth};
-    httpRequest(postOptionsResident, requestBody)
-      .then((res) => {
-        const user_id = res.body[0].id;
-        const getOptions = {
-          host: 'stop_bang_review_DB',
-          port: process.env.PORT,
-          path: `/db/review/findAllByUserId/${user_id}`,
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        };
-    
-        return httpRequest(getOptions);
-      })
+
+    httpRequest(getOptions)
       .then(result => {
         if (result === null) {
           console.log("error occured: ", err);
@@ -43,29 +30,55 @@ module.exports = {
       });
   },
   openReview: (req, res) => {
-    residentModel.getOpenedReviewById(req.headers.auth, (result, err) => {
-      if (result === null) {
-        console.log("error occured: ", err);
-      } else {
-        res.json({
-          openReviews: result[0],
-          tagsData: tags,
-          path: 'openreview'
-        });
+    /* msa */
+    const user_id = req.headers.id;
+    const getOptions = {
+      host: 'stop_bang_sub_DB',
+      port: process.env.PORT,
+      path: `/db/openedReview/findAllById/${user_id}`,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+
+    httpRequest(getOptions)
+      .then(result => {
+        console.log(result.body)
+        if (result === null) {
+          console.log("error occured: ", err);
+        } else {
+          res.json({
+            openReviews: result.body,
+            tagsData: tags,
+            path: 'openreview'
+          });
+        }
+      });
   },
   bookmark: (req, res) => {
-    residentModel.getBookMarkById(req.headers.auth, (result, err) => {
-      if (result === null) {
-        console.log("error occured: ", err);
-      } else {
-        res.json({
-          bookmarks: result[0],
-          path: 'bookmark'
-        });
+    /* msa */
+    const postOptions = {
+      host: 'stop_bang_sub_DB',
+      port: process.env.PORT,
+      path: `/db/bookmark/findALLById/${req.headers.id}`,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+
+    httpRequest(postOptions)
+      .then(result => {
+        if (result === null) {
+          console.log("error occured: ", err);
+        } else {
+          return res.json({
+            bookmarks: result.body,
+            path: "bookmark"
+          });
+        }
+      });
   },
   deleteBookmark: (req, res) => {
     residentModel.deleteBookMarkById(req.params.id, (result, err) => {

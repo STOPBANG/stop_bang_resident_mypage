@@ -21,13 +21,34 @@ module.exports = {
         if (result === null) {
           console.log("error occured: ", err);
         } else {
-          res.json({
-            reviews: result.body,
-            tagsData: tags,
-            path: 'myreview'
-          });
+          const body = result.body.map(element => {
+            const apiUrl = `http://openapi.seoul.go.kr:8088/${process.env.API_KEY}/json/landBizInfo/1/1/${element.agentList_ra_regno}/`;
+            return fetch(apiUrl)
+              .then(apiResponse => {
+                if (!apiResponse.ok) {
+                  throw new Error(`HTTP error! Status: ${apiResponse.status}`);
+                }
+                return apiResponse.json();
+              })
+              .then(js => {
+                if (js.landBizInfo && js.landBizInfo.row) {
+                  const row = js.landBizInfo.row[0];
+                  element.cmp_nm = row.CMP_NM;
+                  element.address = row.ADDRESS;
+                }
+                return element;
+              });
+          })
+          Promise.all(body)
+            .then(body => {
+              return res.json({
+                reviews: body,
+                tagsData: tags,
+                path: 'myreview'
+              })
+            });
         }
-      });
+      })
   },
   openReview: (req, res) => {
     /* msa */
@@ -48,17 +69,38 @@ module.exports = {
         if (result === null) {
           console.log("error occured: ", err);
         } else {
-          res.json({
-            openReviews: result.body,
-            tagsData: tags,
-            path: 'openreview'
-          });
+          const body = result.body.map(element => {
+            const apiUrl = `http://openapi.seoul.go.kr:8088/${process.env.API_KEY}/json/landBizInfo/1/1/${element.agentList_ra_regno}/`;
+            return fetch(apiUrl)
+              .then(apiResponse => {
+                if (!apiResponse.ok) {
+                  throw new Error(`HTTP error! Status: ${apiResponse.status}`);
+                }
+                return apiResponse.json();
+              })
+              .then(js => {
+                if (js.landBizInfo && js.landBizInfo.row) {
+                  const row = js.landBizInfo.row[0];
+                  element.cmp_nm = row.CMP_NM;
+                  element.address = row.ADDRESS;
+                }
+                return element;
+              });
+          })
+          Promise.all(body)
+            .then(body => {
+              return res.json({
+                openReviews: body,
+                tagsData: tags,
+                path: 'openreview'
+              });
+            });
         }
       });
   },
   bookmark: (req, res) => {
     /* msa */
-    const postOptions = {
+    const getOptions = {
       host: 'stop_bang_sub_DB',
       port: process.env.PORT,
       path: `/db/bookmark/findALLById/${req.headers.id}`,
@@ -68,26 +110,63 @@ module.exports = {
       }
     };
 
-    httpRequest(postOptions)
+    httpRequest(getOptions)
       .then(result => {
         if (result === null) {
           console.log("error occured: ", err);
         } else {
-          return res.json({
-            bookmarks: result.body,
-            path: "bookmark"
-          });
+          const body = result.body.map(element => {
+            const apiUrl = `http://openapi.seoul.go.kr:8088/${process.env.API_KEY}/json/landBizInfo/1/1/${element.agentList_ra_regno}/`;
+            return fetch(apiUrl)
+              .then(apiResponse => {
+                if (!apiResponse.ok) {
+                  throw new Error(`HTTP error! Status: ${apiResponse.status}`);
+                }
+                return apiResponse.json();
+              })
+              .then(js => {
+                if (js.landBizInfo && js.landBizInfo.row) {
+                  const row = js.landBizInfo.row[0];
+                  element.cmp_nm = row.CMP_NM;
+                  element.address = row.ADDRESS;
+                }
+                return element;
+              });
+          })
+          Promise.all(body)
+            .then(body => {
+              return res.json({
+                bookmarks: body,
+                path: "bookmark"
+              });
+            });
         }
       });
   },
   deleteBookmark: (req, res) => {
-    residentModel.deleteBookMarkById(req.params.id, (result, err) => {
-      if (result === null) {
-        console.log("error occured: ", err);
-      } else {
-        res.redirect("/resident/bookmark");
+    /* msa */
+    const postOptions = {
+      host: 'stop_bang_sub_DB',
+      port: process.env.PORT,
+      path: `/db/bookmark/delete`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       }
-    });
+    };
+
+    const requestBody = {
+      bm_id: req.params.id
+    };
+
+    httpRequest(postOptions, requestBody)
+      .then(result => {
+        if (result === null) {
+          console.log("error occured: ", err);
+        } else {
+          return res.status(302).redirect("/resident/bookmark");
+        }
+      });
   },
   settings: (req, res) => {
     /* msa */
